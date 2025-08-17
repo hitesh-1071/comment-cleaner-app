@@ -5,6 +5,7 @@ import html
 import emoji
 import contractions
 import nltk
+import zipfile
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer, WordNetLemmatizer
@@ -12,7 +13,6 @@ from io import BytesIO
 
 # Download NLTK resources
 nltk.download("punkt")
-nltk.download("punkt_tab")
 nltk.download("stopwords")
 nltk.download("wordnet")
 
@@ -151,7 +151,7 @@ if df is not None:
     st.subheader("📊 Preview of Cleaned Data")
     st.dataframe(df.head(10))
 
-    file_type = st.radio("📥 Choose file format to download:", ("CSV", "Excel"))
+    file_type = st.radio("📥 Choose file format to download:", ("CSV", "Excel", "ZIP"))
 
     if file_type == "CSV":
         csv = df.to_csv(index=False)
@@ -161,7 +161,7 @@ if df is not None:
             file_name="Cleaned_Comments.csv",
             mime="text/csv"
         )
-    else:
+    elif file_type == "Excel":
         output = BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
             df.to_excel(writer, index=False, sheet_name="CleanedData")
@@ -170,4 +170,23 @@ if df is not None:
             data=output.getvalue(),
             file_name="Cleaned_Comments.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    else:  # ZIP option
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+            # Add CSV inside ZIP
+            csv_data = df.to_csv(index=False)
+            zipf.writestr("Cleaned_Comments.csv", csv_data)
+
+            # Add Excel inside ZIP
+            excel_output = BytesIO()
+            with pd.ExcelWriter(excel_output, engine="openpyxl") as writer:
+                df.to_excel(writer, index=False, sheet_name="CleanedData")
+            zipf.writestr("Cleaned_Comments.xlsx", excel_output.getvalue())
+
+        st.download_button(
+            label="⬇️ Download Cleaned Data (ZIP)",
+            data=zip_buffer.getvalue(),
+            file_name="Cleaned_Comments.zip",
+            mime="application/zip"
         )
