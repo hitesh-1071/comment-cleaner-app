@@ -12,6 +12,7 @@ from io import BytesIO
 
 # Download NLTK resources
 nltk.download("punkt")
+nltk.download("punkt_tab")
 nltk.download("stopwords")
 nltk.download("wordnet")
 
@@ -169,3 +170,4 @@ if df is not None:
         st.download_button("⬇️ Download Cleaned Excel", data=output.getvalue(),
                            file_name="Cleaned_Comments.xlsx",
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
