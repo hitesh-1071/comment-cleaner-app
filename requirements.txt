@@ -9,8 +9,4 @@ openpyxl
 
 import nltk
 
-# Download NLTK resources (needed on Streamlit Cloud)
-nltk.download("punkt")
-nltk.download("punkt_tab")
-nltk.download("stopwords")
-nltk.download("wordnet")
+
