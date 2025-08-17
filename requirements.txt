@@ -6,7 +6,4 @@ matplotlib
 emoji
 contractions
 openpyxl
-
-import nltk
-
-
+nltk
