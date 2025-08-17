@@ -9,6 +9,8 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 from io import BytesIO
+import base64
+import uuid
 
 # Download NLTK resources
 nltk.download("punkt")
@@ -158,16 +160,20 @@ if df is not None:
     st.subheader("📊 Preview of Cleaned Data")
     st.dataframe(df.head(10))
 
-    # --- Download cleaned file ---
+    # --- Download cleaned file (Safe way) ---
     file_type = st.radio("📥 Choose file format to download:", ("CSV", "Excel"))
 
     if file_type == "CSV":
         csv = df.to_csv(index=False).encode("utf-8")
-        st.download_button("⬇️ Download Cleaned CSV", data=csv, file_name="Cleaned_Comments.csv", mime="text/csv")
+        b64 = base64.b64encode(csv).decode()
+        safe_filename = f"Cleaned_Comments_{uuid.uuid4().hex[:8]}.csv"
+        href = f'<a href="data:text/csv;base64,{b64}" download="{safe_filename}">⬇️ Download Cleaned CSV</a>'
+        st.markdown(href, unsafe_allow_html=True)
+
     else:
         output = BytesIO()
         df.to_excel(output, index=False, engine="openpyxl")
-        st.download_button("⬇️ Download Cleaned Excel", data=output.getvalue(),
-                           file_name="Cleaned_Comments.xlsx",
-                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
+        b64 = base64.b64encode(output.getvalue()).decode()
+        safe_filename = f"Cleaned_Comments_{uuid.uuid4().hex[:8]}.xlsx"
+        href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="{safe_filename}">⬇️ Download Cleaned Excel</a>'
+        st.markdown(href, unsafe_allow_html=True)
