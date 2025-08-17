@@ -11,7 +11,7 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 from io import BytesIO
 
-# Download NLTK resources
+# --- Download NLTK resources ---
 nltk.download("punkt")
 nltk.download("stopwords")
 nltk.download("wordnet")
@@ -154,7 +154,7 @@ if df is not None:
     file_type = st.radio("📥 Choose file format to download:", ("CSV", "Excel", "ZIP"))
 
     if file_type == "CSV":
-        csv = df.to_csv(index=False)
+        csv = df.to_csv(index=False).encode("utf-8")
         st.download_button(
             label="⬇️ Download Cleaned CSV",
             data=csv,
@@ -175,7 +175,7 @@ if df is not None:
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
             # Add CSV inside ZIP
-            csv_data = df.to_csv(index=False)
+            csv_data = df.to_csv(index=False).encode("utf-8")
             zipf.writestr("Cleaned_Comments.csv", csv_data)
 
             # Add Excel inside ZIP
@@ -190,3 +190,4 @@ if df is not None:
             data=zip_buffer,
             file_name="Cleaned_Comments.zip",
             mime="application/zip"
+        )
