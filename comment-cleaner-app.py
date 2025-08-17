@@ -184,9 +184,9 @@ if df is not None:
                 df.to_excel(writer, index=False, sheet_name="CleanedData")
             zipf.writestr("Cleaned_Comments.xlsx", excel_output.getvalue())
 
+        zip_buffer.seek(0)
         st.download_button(
             label="⬇️ Download Cleaned Data (ZIP)",
-            data=zip_buffer.getvalue(),
+            data=zip_buffer,
             file_name="Cleaned_Comments.zip",
             mime="application/zip"
-        )
