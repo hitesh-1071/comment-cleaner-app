@@ -9,8 +9,6 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 from io import BytesIO
-import base64
-import uuid
 
 # Download NLTK resources
 nltk.download("punkt")
@@ -78,7 +76,6 @@ def clean_text(
 
     tokens = [word for word in tokens if word not in STOPWORDS]
 
-    # Apply stemming or lemmatization
     if stemming:
         tokens = [stemmer.stem(word) for word in tokens]
     elif lemmatization:
@@ -91,16 +88,12 @@ def clean_text(
 st.title("🧹 Customer Comment Cleaning App")
 st.write("Choose whether you want to upload a file or manually enter comments.")
 
-# --- First Selection ---
 mode = st.radio("Select Input Method:", ("📂 Upload CSV/Excel", "✍️ Manual Input"))
 
 # Sidebar Options
 st.sidebar.header("⚙️ Cleaning Options")
 
-# Language Support
 language = st.sidebar.selectbox("Choose Language for Stopwords", ["english", "hindi", "marathi"])
-
-# Extra Cleaning Options
 remove_emoji = st.sidebar.checkbox("Remove Emojis", value=True)
 remove_html = st.sidebar.checkbox("Remove HTML Tags", value=True)
 expand_contract = st.sidebar.checkbox("Expand Contractions", value=True)
@@ -108,11 +101,9 @@ normalize_repeat = st.sidebar.checkbox("Normalize Repeated Characters", value=Tr
 remove_nonalpha = st.sidebar.checkbox("Remove Non-Alphabetic", value=True)
 lowercase = st.sidebar.checkbox("Convert to Lowercase", value=True)
 
-# Stemming / Lemmatization Options
 apply_stemming = st.sidebar.checkbox("Apply Stemming (PorterStemmer)", value=False)
 apply_lemmatization = st.sidebar.checkbox("Apply Lemmatization (WordNetLemmatizer)", value=False)
 
-# --- Input Data ---
 df = None
 
 if mode == "📂 Upload CSV/Excel":
@@ -160,20 +151,23 @@ if df is not None:
     st.subheader("📊 Preview of Cleaned Data")
     st.dataframe(df.head(10))
 
-    # --- Download cleaned file (Safe way) ---
     file_type = st.radio("📥 Choose file format to download:", ("CSV", "Excel"))
 
     if file_type == "CSV":
-        csv = df.to_csv(index=False).encode("utf-8")
-        b64 = base64.b64encode(csv).decode()
-        safe_filename = f"Cleaned_Comments_{uuid.uuid4().hex[:8]}.csv"
-        href = f'<a href="data:text/csv;base64,{b64}" download="{safe_filename}">⬇️ Download Cleaned CSV</a>'
-        st.markdown(href, unsafe_allow_html=True)
-
+        csv = df.to_csv(index=False)
+        st.download_button(
+            label="⬇️ Download Cleaned CSV",
+            data=csv,
+            file_name="Cleaned_Comments.csv",
+            mime="text/csv"
+        )
     else:
         output = BytesIO()
-        df.to_excel(output, index=False, engine="openpyxl")
-        b64 = base64.b64encode(output.getvalue()).decode()
-        safe_filename = f"Cleaned_Comments_{uuid.uuid4().hex[:8]}.xlsx"
-        href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="{safe_filename}">⬇️ Download Cleaned Excel</a>'
-        st.markdown(href, unsafe_allow_html=True)
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="CleanedData")
+        st.download_button(
+            label="⬇️ Download Cleaned Excel",
+            data=output.getvalue(),
+            file_name="Cleaned_Comments.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
