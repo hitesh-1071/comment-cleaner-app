@@ -11,15 +11,22 @@ import base64
 import gzip
 import time
 import random
+import os
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 from io import BytesIO
 
-# --- Download NLTK resources ---
-nltk.download("punkt")
-nltk.download("stopwords")
-nltk.download("wordnet")
+# --- Setup NLTK for Streamlit Cloud ---
+nltk_data_dir = os.path.join(os.getcwd(), "nltk_data")
+if not os.path.exists(nltk_data_dir):
+    os.makedirs(nltk_data_dir)
+
+nltk.download("punkt", download_dir=nltk_data_dir)
+nltk.download("stopwords", download_dir=nltk_data_dir)
+nltk.download("wordnet", download_dir=nltk_data_dir)
+
+nltk.data.path.append(nltk_data_dir)
 
 # Stemmer & Lemmatizer
 stemmer = PorterStemmer()
@@ -89,7 +96,6 @@ def clean_text(
 
 # --- Utils ---
 def rand_suffix():
-    # कुछ ब्राउज़र्स cache/AV heuristic से बचने को filename random कर देते हैं
     return f"{int(time.time())}_{random.randint(1000,9999)}"
 
 def to_base64_download_link(data_bytes: bytes, filename: str, mime: str, label: str):
@@ -172,7 +178,7 @@ if df is not None:
         file_type = st.radio("Choose file format:", ("CSV", "Excel", "ZIP"))
 
         if file_type == "CSV":
-            csv_bytes = df.to_csv(index=False).encode("utf-8")  # bytes
+            csv_bytes = df.to_csv(index=False).encode("utf-8")
             st.download_button(
                 label="⬇️ Download Cleaned CSV",
                 data=csv_bytes,
@@ -184,7 +190,7 @@ if df is not None:
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine="openpyxl") as writer:
                 df.to_excel(writer, index=False, sheet_name="CleanedData")
-            output.seek(0)  # very important
+            output.seek(0)
             st.download_button(
                 label="⬇️ Download Cleaned Excel",
                 data=output,
@@ -195,10 +201,8 @@ if df is not None:
         else:  # ZIP
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
-                # CSV
                 csv_bytes = df.to_csv(index=False).encode("utf-8")
                 zipf.writestr("Cleaned_Comments.csv", csv_bytes)
-                # Excel
                 excel_output = io.BytesIO()
                 with pd.ExcelWriter(excel_output, engine="openpyxl") as writer:
                     df.to_excel(writer, index=False, sheet_name="CleanedData")
@@ -213,10 +217,7 @@ if df is not None:
             )
 
     else:
-        # SAFE OPTIONS (rarely flagged)
         st.markdown("**Safe options (recommended if browser shows virus warning):**")
-
-        # 1) TXT (tab-delimited) — very safe
         txt_str = df.to_csv(index=False, sep="\t")
         st.download_button(
             label="⬇️ Safe Download (TXT)",
@@ -224,8 +225,6 @@ if df is not None:
             file_name=f"Cleaned_Comments_{rand_suffix()}.txt",
             mime="text/plain"
         )
-
-        # 2) JSON — safe
         json_str = df.to_json(orient="records", force_ascii=False)
         st.download_button(
             label="⬇️ Safe Download (JSON)",
@@ -233,8 +232,6 @@ if df is not None:
             file_name=f"Cleaned_Comments_{rand_suffix()}.json",
             mime="application/json"
         )
-
-        # 3) CSV (GZIP) — safe & small
         csv_bytes = df.to_csv(index=False).encode("utf-8")
         gz_buf = io.BytesIO()
         with gzip.GzipFile(filename="Cleaned_Comments.csv", fileobj=gz_buf, mode="wb") as gz:
@@ -246,8 +243,6 @@ if df is not None:
             file_name=f"Cleaned_Comments_{rand_suffix()}.csv.gz",
             mime="application/gzip"
         )
-
-        # 4) Base64 fallback link (copy-paste friendly)
         st.markdown("Or use Base64 fallback (click then save):")
         to_base64_download_link(
             data_bytes=csv_bytes,
@@ -255,5 +250,4 @@ if df is not None:
             mime="text/csv",
             label="📎 Download CSV via Base64"
         )
-
         st.info("Safe mode files rarely get blocked. TXT/JSON open easily in Excel (Data → From Text/JSON).")
