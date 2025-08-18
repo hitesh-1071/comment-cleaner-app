@@ -19,12 +19,13 @@ from io import BytesIO
 
 # --- Setup NLTK for Streamlit Cloud ---
 nltk_data_dir = os.path.join(os.getcwd(), "nltk_data")
-if not os.path.exists(nltk_data_dir):
-    os.makedirs(nltk_data_dir)
+os.makedirs(nltk_data_dir, exist_ok=True)
 
-nltk.download("punkt", download_dir=nltk_data_dir)
-nltk.download("stopwords", download_dir=nltk_data_dir)
-nltk.download("wordnet", download_dir=nltk_data_dir)
+for pkg in ["punkt", "stopwords", "wordnet"]:
+    try:
+        nltk.data.find(f"tokenizers/{pkg}" if pkg=="punkt" else f"corpora/{pkg}")
+    except LookupError:
+        nltk.download(pkg, download_dir=nltk_data_dir)
 
 nltk.data.path.append(nltk_data_dir)
 
@@ -61,7 +62,7 @@ def clean_text(
     stemming=False,
     lemmatization=False
 ):
-    if not isinstance(text, str):
+    if not isinstance(text, str) or text.strip() == "":
         return ""
     text = html.unescape(text)
 
@@ -78,7 +79,11 @@ def clean_text(
     if lowercase:
         text = text.lower()
 
-    tokens = word_tokenize(text)
+    # Safe tokenization
+    try:
+        tokens = word_tokenize(text)
+    except:
+        tokens = text.split()
 
     try:
         STOPWORDS = set(stopwords.words(language))
